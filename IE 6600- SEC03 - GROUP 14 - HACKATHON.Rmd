@@ -1,0 +1,346 @@
+---
+title: "Hackathon-IE6600-SEC03-GROUP14"
+author: "Dhruv Merchant"
+date: "2/19/2022"
+output: html_document
+---
+
+# Introduction and Problem Statement:
+
+Be it a start-up or an established company, compensation is one of the most important things to maintain for the company in order to reward and retain it's employees. A lot of start-ups are unsure whether they are paying their employees correctly.A compensation strategy is important for all organizations. It should be well structured and reasonable. From the San Francisco Employee Compensation Data set, we plan to visualize the pay structure in different organizations from 2013 till 2021. The major areas focused are the salary changes over years in San Francisco. It also focuses on how the salary differentiates from high rank and low rank employees and what are the benefits received by the high rank employees in some of the job families.
+
+The San Francisco Employee Compensation Data consists of useful information from which valuable insights can be derived. Within the "Organization Group", there are seven organizations in San Francisco. We will find out the most number of organization groups since 2013 and try to visualize change in those number of organization groups from 2013 to 2021. These organisations are divided into "Departments" which are primary organizational unit by city and county of San Francisco. These departments are further divided into "Job Families" and "Job types". Job Families are the job fields of a particular major and Job Titles are the job roles within the families. The salaries, benefits and total compensation are the last columns in the data set from where we find the average salaries for Job families and Job type. 
+
+# Organizational Data:
+
+# Question 1: What are the most number of Organizations in San Francisco? How have the number of organizations changed over years from 2013 to 2021?
+
+
+```{r, include=FALSE, echo=FALSE, warning=FALSE, message=FALSE}
+
+library(dplyr)
+library(magrittr)
+library(tidyverse)
+library(tidyr)
+library(lubridate)
+library(data.table)
+library(gridExtra)
+library(stringr)
+library(tinytex)
+library(ggplot2)
+library(corrr)
+library(corrplot)
+library(ggalluvial)
+library(RColorBrewer)
+library(treemap)
+library(treemapify)
+```
+
+```{r, include=FALSE, echo=FALSE, warning=FALSE, message=FALSE}
+
+#Reading dataset
+
+setwd("C:\\Users\\dhruv\\Desktop")
+getwd()
+
+EmployeeCompensation_df <- read.csv("C:\\Users\\dhruv\\Desktop\\Employee_Compensation.csv")
+head(EmployeeCompensation_df,10)
+
+```
+
+
+```{r Task 1, echo=FALSE, warning=FALSE, message=FALSE}
+
+# To count the number of Organization Groups from 2013 to 2021.
+Organization_df <- EmployeeCompensation_df%>%
+                   group_by(Organization.Group)%>%
+                   summarise(Count = n())%>%
+                   arrange(desc(Count))%>%
+                   drop_na()
+
+
+# Plotting the number of Organization Groups vs Count
+
+Organization_Bar_df <- ggplot(Organization_df, aes(x = reorder(Organization.Group,Count), y = Count , fill = Organization.Group))+geom_bar(stat = "identity")+ labs(title = "SF Organizational Groups", x = "Organization", y = "Count") + theme(axis.text.x = element_text(angle = 45,hjust = 1))
+
+Organization_Bar_df
+
+#To see increase in number of Individual Organizationals Groups from 2013 to 2021 
+
+Organization1_df <- EmployeeCompensation_df%>%
+                   group_by(Organization.Group, Year)%>%
+                   summarise(Count = n())%>%
+                   arrange(desc(Count))%>%
+                   drop_na()
+
+
+Organization1_Bar_df <- ggplot(Organization1_df, aes(x = as.factor(Year), y = Count , fill = Organization.Group))+geom_bar(stat = "identity")+ labs(title = "SF Organizational Groups", x = "Year", y = "Count")+facet_grid(rows  = vars(Organization.Group))+theme(axis.text.x = element_text(angle = 90,hjust = 1))
+
+Organization1_Bar_df
+
+```
+
+# Conclusion: 
+
+We can see from the above bar plot that public, works and transportation comes under the most number of organizations in San Francisco followed by community health. Culture and recreation comes under the least number of organizations. There are 28k organizational groups of public, works and transportation in 2021. Although most of these groups were increasing from 2013, 2020 sees a decrease in number of all groups from the previous years. It can be mainly due to the pandemic and is likely to increase coming forward.
+
+# Department by Organization
+# Question 2: How are the Departments related to the Organizations and which are the most number of Departments under Organizations?
+
+```{r Task 2, echo=FALSE, warning=FALSE, message=FALSE}
+
+Dep_Org_df <- EmployeeCompensation_df%>%
+              filter(Year == 2021)%>%
+              group_by(Organization.Group, Department)%>%
+              summarise(Average = mean(Salaries))%>%
+              arrange(desc(Average))%>%
+              drop_na()
+
+
+
+Tree_DO_df <- ggplot(Dep_Org_df, aes(area = Average, label = Department, fill = Organization.Group, subgroup = Organization.Group))+geom_treemap()+ggtitle("Distribution of Department by Organization in 2021")+ geom_treemap_text(colour = "white", place = "center", size = 13, grow = FALSE)
+
+Tree_DO_df
+
+```
+
+# Conclusion
+
+We can see from the above observation that although the public works, transportation and commerce came under the most number of organizational groups, the distribution of average salary by department is the most for Public Protection and General Administration and Finance in the City of San Francisco in 2021. Some of the departments such Police, Sheriff and Fire departments come under public protection. Mayor and City Attorney come under General Administration and Finance. Although culture and recreation has less number of organizations, the average pay per department is fairly good.
+
+# Salaries
+# Question 3: What is the change in average salaries over the years from 2013 to 2021?
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+
+Salary_Year_df <- EmployeeCompensation_df %>%
+                  group_by(Year)%>%
+                  summarise(Average_Salary = mean(Salaries))%>%
+                  arrange(desc(Average_Salary))%>%
+                  drop_na()
+
+
+Percent_Change <- Salary_Year_df%>%
+                  mutate(percent_change = (Average_Salary/lead(Average_Salary)-1)*100)%>%
+                  arrange(desc(Year))
+
+
+Slopegraph <- ggplot(Percent_Change, aes(x = as.factor(Year), y = Average_Salary, fill = percent_change, group = 1))+ geom_line(aes(color = percent_change, alpha = 0.4), size = 2)+geom_point(aes(color = percent_change, alpha = 1), size = 6)+scale_x_discrete(position = "top")+theme_bw()+labs(title = "Change in Average Salary from 2013 to 2021",subtitle = "(percent change yearwise)", x = "Year" , y = "Average Salary($)")
+
+Slopegraph
+                  
+```
+
+# Conclusion
+
+We have plotted a slope graph to find the increase in average salary from 2013 to 2021.We can see that 2016 had a sharp percent increase in the average salary of all employees in San Francisco. 2019 and 2020 have also seen significant percent increase in the average salaries of all employees. For any established organization or a start-up, the percent increase in average salary is important factor in deciding the salary increase per year.
+
+# Information Systems and Professional Engineering
+# Question 4: Show the Average Total Salaries of the top 10 and bottom 10 employees in 2 different types of Job Families?
+
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+
+InformationSystemsMax <- EmployeeCompensation_df%>%
+                      filter(Job.Family == "Information Systems")%>%
+                      group_by(Job)%>%
+                      summarise(
+                        AverageIS = mean(Total.Salary)
+                      )%>%
+                      arrange(desc(AverageIS))%>%
+                      drop_na()
+
+
+
+InfoPlot <- ggplot(head(InformationSystemsMax,10), aes(x = reorder(Job, AverageIS), y = AverageIS, fill = AverageIS))+geom_bar(stat = "identity")+coord_flip()+labs(title = "Max Average Salaries of Information Systems Professionals", x = "IS Job Titles", y = "Average Salaries($)")+theme_bw()+scale_fill_gradient(low = "red", high = "darkred")
+
+
+InformationSystemsMin <- EmployeeCompensation_df%>%
+                      filter(Job.Family == "Information Systems")%>%
+                      group_by(Job)%>%
+                      summarise(
+                        AverageIS = mean(Total.Salary)
+                      )%>%
+                      arrange(AverageIS)%>%
+                      drop_na()
+
+
+
+InfoPlotMin <- ggplot(head(InformationSystemsMin,10), aes(x = reorder(Job, AverageIS), y = AverageIS, fill = AverageIS))+geom_bar(stat = "identity")+coord_flip()+labs(title = "Min Average Salaries of Information Systems Professionals", x = "IS Job Titles", y = "Average Salaries($)")+theme_bw()+scale_fill_gradient(low = "red", high = "darkred")
+
+
+grid.arrange(InfoPlot, InfoPlotMin, nrow = 2)
+
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+EngMax <- EmployeeCompensation_df%>%
+                      filter(Job.Family == "Professional Engineering")%>%
+                      group_by(Job)%>%
+                      summarise(
+                        AverageEng = mean(Total.Salary)
+                      )%>%
+                      arrange(desc(AverageEng))%>%
+                      drop_na()
+
+
+
+EngPlotMax <- ggplot(head(EngMax,10), aes(x = reorder(Job, AverageEng), y = AverageEng, fill = AverageEng))+geom_bar(stat = "identity")+coord_flip()+labs(title = "Max Average Salaries of Engineering Professionals", x = "Engineering Job Titles", y = "Average Salaries($)")+theme_bw()+scale_fill_gradient(low = "orange", high = "yellow")
+
+
+
+EngMin <- EmployeeCompensation_df%>%
+                      filter(Job.Family == "Professional Engineering")%>%
+                      group_by(Job)%>%
+                      summarise(
+                        AverageEng = mean(Total.Salary)
+                      )%>%
+                      arrange(AverageEng)%>%
+                      drop_na()
+
+
+
+EngPlotMin <- ggplot(head(EngMin,10), aes(x = reorder(Job, AverageEng), y = AverageEng, fill = AverageEng))+geom_bar(stat = "identity")+coord_flip()+labs(title = "Min Average Salaries of Engineering Professionals", x = "Engineering Job Titles", y = "Average Salaries($)")+theme_bw()+scale_fill_gradient(low = "orange", high = "yellow")
+
+
+grid.arrange(EngPlotMax, EngPlotMin, nrow = 2)
+
+```
+
+# Conclusion
+
+In order to understand the maximum and the minimum amount earned by an employee in an organization, we take some of the most desired fields in the world, Information Systems and Professional Engineering. We can see that the maximum range of salary for an information systems professional is between 150k and 100k and the minimum range is between 25k to 55k. Similarly, the maximum range for an engineering professional is between 160k and 125k and the minimum range is between 70k and 10k. In order to compensate employees fairly, it is important to understand the maximum and the minimum amount earned by an employee in any field. 
+
+# Overtime Data
+# Question 5: How much does overtime cost the company? What is the maximum and the average value of the overtime money?
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+
+Job_fam_df <- EmployeeCompensation_df%>%
+              group_by(Job.Family, Year)%>%
+              summarise(overtime = mean(Overtime),
+                        Max = max(Overtime))%>%
+              arrange(desc(overtime))%>%
+              drop_na()
+
+
+
+
+Box_df <- ggplot(head(Job_fam_df,60), aes(x = reorder(Job.Family, overtime), y = overtime, fill = Job.Family))+geom_boxplot()+coord_flip()+labs(title = "Overtime Data", x = "Job Family", y = "Overtime Money($)")+theme_bw()
+
+Box_df
+
+
+```
+
+
+
+# Conclusion
+
+Incentives and overtime money are another important factor in deciding the compensation pay of an employee. It is important to understand the average overtime amount earned by the employee and the maximum amount as well. This helps the company to set incentives based on the work load. We can see that the job families with most overtime are Fire Services and Correction and Detention. Incentives also depend on the the total salary of an employee. High paying jobs such as that of information systems and professional engineering have less overtime hours.
+
+
+# Benefits
+# Question 6: How much benefits are given to the top ranked employees in some of the most desired job families?
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+
+Ret_BenefitsIS_df <- EmployeeCompensation_df%>%
+                   filter(Job.Family == "Information Systems")%>%
+                   dplyr::select(c(5,11:12,18:20))%>%
+                   group_by(Job.Family, Job)%>%
+                   summarise(Ret = mean(Retirement),
+                             HD = mean(Health.and.Dental),
+                             OB = mean(Other.Benefits))%>%
+                   arrange(desc(Ret))%>%
+                   drop_na()
+
+
+CircularBarRetIS  <- ggplot(head(Ret_BenefitsIS_df,7), aes(reorder(x = Job, -Ret), y = Ret, fill = Job)) + geom_bar(stat = "identity")+ coord_polar()+theme_bw()+labs(title = "Retirement Benefits for Top 7 IS Professionals", x = "Job Titles", y = "Average Retirement Amount($)")+theme_bw()+scale_fill_brewer(palette = "Reds")
+               
+CircularBarRetIS
+
+CircularBarHDIS  <- ggplot(head(Ret_BenefitsIS_df,7), aes(reorder(x = Job, -HD), y = HD, fill = Job)) + geom_bar(stat = "identity")+coord_polar()+theme_bw()+labs(title = "Health and Dental Benefits for Top 7 IS Professionals", x = "Job Titles", y = "Average Health and Dental Amount($)")+theme_bw()+scale_fill_brewer(palette = "Reds")
+               
+CircularBarHDIS
+
+CircularBarSSNIS  <- ggplot(head(Ret_BenefitsIS_df,7), aes(reorder(x = Job, -OB), y = OB, fill = Job)) + geom_bar(stat = "identity")+coord_polar()+labs(title = "Other Benefits for Top 7 IS Professionals", x = "Job Titles", y = "Average Other Benefits Amount($)")+theme_bw()+scale_fill_brewer(palette = "Reds")+theme_bw()
+               
+CircularBarSSNIS
+
+
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+
+EngRet_Benefits_df <- EmployeeCompensation_df%>%
+                   filter(Job.Family == "Professional Engineering")%>%
+                   dplyr::select(c(5,11:12,18:20))%>%
+                   group_by(Job.Family, Job)%>%
+                   summarise(Ret = mean(Retirement),
+                             HD = mean(Health.and.Dental),
+                             OB = mean(Other.Benefits))%>%
+                   arrange(desc(Ret))%>%
+                   drop_na()
+
+
+CircularBarRetEng  <- ggplot(head(EngRet_Benefits_df,7), aes(reorder(x = Job, -Ret), y = Ret, fill = Job)) + geom_bar(stat = "identity")+ coord_polar()+theme_bw()+labs(title = "Retirement Benefits for Top 7 Engineering Professionals", x = "Job Titles", y = "Average Retirement Amount($)")+theme_bw()+scale_fill_brewer(palette = "YlOrBr")
+
+CircularBarRetEng
+               
+
+CircularBarHDEng  <- ggplot(head(EngRet_Benefits_df,7), aes(reorder(x = Job, -HD), y = HD, fill = Job)) + geom_bar(stat = "identity")+coord_polar()+theme_bw()+labs(title = "Health and Dental Benefits for Top 7 Engineering Professionals", x = "Job Titles", y = "Average Health and Dental Amount($)")+theme_bw()+scale_fill_brewer(palette = "YlOrBr")
+
+CircularBarHDEng               
+
+CircularBarSSNEng <- ggplot(head(EngRet_Benefits_df,7), aes(reorder(x = Job, -OB), y = OB, fill = Job)) + geom_bar(stat = "identity")+coord_polar()+labs(title = "Other Benefits for Top 7 Engineering Professionals", x = "Job Titles", y = "Average Other Benefits Amount($)")+theme_bw()+scale_fill_brewer(palette = "YlOrBr")
+               
+CircularBarSSNEng
+
+```
+
+# Conclusion
+
+All employees look for what benefits the company provides in order to make a permanent move to the company. So it is important to understand how the benefits are distributed among high paying jobs. Considering the previous two job families, Information Systems and Professional Engineering, we visualize the 3 benefits received by the top earning employees. In Information Systems, the IS Engineer Principle and IS Director have the highest retirement benefits. Technology Expert 2 has the most health benefits. In Professional Engineering, SR position has the highest retirement benefits. Architect has the most health benefits. In terms of benefits, both the job fields have fairly distributed benefits in terms of retirement, health and dental and other benefits.
+
+# Compensation
+# Question 7: How much Total Compensation is received by the Job Family of Management field? 
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+
+ManagementMax <- EmployeeCompensation_df%>%
+               filter(Job.Family == "Management")%>%
+               group_by(Job.Family, Job)%>%
+               summarise(Average_Compensation = mean(Total.Compensation))%>%
+               arrange(desc(Average_Compensation))%>%
+               drop_na
+
+
+
+ManagementMaxLP <- ggplot(head(ManagementMax,10), aes(x = reorder(Job,-Average_Compensation), y = Average_Compensation))+
+                   geom_segment(aes(x = Job, xend = Job, y=0, yend = Average_Compensation))+geom_point(size = 4, pch = 21, bg = 4, col = 1)+theme(axis.text.x = element_text(angle = 45,hjust = 1))+labs(title = "Average Compensation", x = "Job Titles", y = "Average Total Compensation ($)")
+
+
+ManagementMin <- EmployeeCompensation_df%>%
+               filter(Job.Family == "Management")%>%
+               group_by(Job.Family, Job)%>%
+               summarise(Average_Compensation = mean(Total.Compensation))%>%
+               arrange(Average_Compensation)%>%
+               drop_na
+
+
+ManagementMinLP <- ggplot(head(ManagementMin,10), aes(x = reorder(Job,-Average_Compensation), y = Average_Compensation))+
+                   geom_segment(aes(x = Job, xend = Job, y=0, yend = Average_Compensation))+geom_point(size = 4, pch = 21, bg = 4, col = 1)+theme(axis.text.x = element_text(angle = 45,hjust = 1))+labs(title = "Average Compensation", x = "Job Titles", y = "Average Total Compensation ($)")
+
+
+grid.arrange(ManagementMaxLP, ManagementMinLP, ncol = 2)
+
+```
+
+# Conclusion
+
+The total compensation is the sum of the total salaries and the total benefits. Considering the Management Job Family, we see that after the Total compensation is calculated, Government Public Affairs Manager receives the highest amount. Even for low paying positions, the institute manager receives around 60k in total. Therefore we conclude that the pay structure is huge in city of San Francisco and in order to set a limit on the salaries, we should consider the following parameters to make sure that everyone is rewarded with fairness.
+
+# References(Dataset-Link)
+ 
+https://data.sfgov.org/City-Management-and-Ethics/Employee-Compensation/88g8-5mnd
